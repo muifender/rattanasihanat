@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M6 MIDI Editor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            gap: 20px;
+        }
+        .left-panel {
+            flex: 0 0 350px;
+        }
+        .right-panel {
+            flex: 1;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .alert {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            display: none;
+        }
+        .alert.success { background-color: #d4edda; color: #155724; }
+        .alert.error { background-color: #f8d7da; color: #721c24; }
+        .alert.info { background-color: #d1ecf1; color: #0c5460; }
+        .connection-status {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .connected { color: green; }
+        .disconnected { color: red; }
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .button {
+            width: 100px;
+            height: 100px;
+            border: 2px solid #000;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            text-align: center;
+            background-color: #fff;
+        }
+        .button.active {
+            border-color: #007bff;
+            box-shadow: 0 0 5px rgba(0,123,255,0.5);
+        }
+        .bank-selector {
+            margin-bottom: 10px;
+        }
+        select, input, button {
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            border: none;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        button:hover:not(:disabled) {
+            background-color: #0056b3;
+        }
+        .settings-form {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .settings-form label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        .field-group {
+            margin: 15px 0;
+            padding: 10px;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+        }
+        .field-group h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="left-panel">
+            <div id="connectionStatus" class="connection-status disconnected">Disconnected</div>
+            <button id="connectButton">Connect to Serial</button>
+            <button id="loadButton" disabled>Load Settings</button>
+            <button id="clearEEPROMButton" disabled>Clear EEPROM</button>
+            <div id="alert" class="alert"></div>
+            <div>Current Bank: <span id="currentBankDisplay">N/A</span></div>
+            <div>Current Button: <span id="currentButtonDisplay">N/A</span></div>
+            <div class="bank-selector">
+                <select id="bankSelect">
+                    <option value="Bank 1">Bank 1</option>
+                    <option value="Bank 2">Bank 2</option>
+                    <option value="Bank 3">Bank 3</option>
+                    <option value="Bank 4">Bank 4</option>
+                </select>
+            </div>
+            <div class="button-grid">
+                <div class="button" data-button="1">Button 1</div>
+                <div class="button" data-button="2">Button 2</div>
+                <div class="button" data-button="3">Button 3</div>
+                <div class="button" data-button="4">Button 4</div>
+                <div class="button" data-button="5">Button 5</div>
+                <div class="button" data-button="6">Button 6</div>
+            </div>
+        </div>
+        <div class="right-panel">
+            <form id="settings-form" class="settings-form">
+                <label for="mode">Mode:</label>
+                <select id="mode">
+                    <option value="single">Single Step (Single Bank)</option>
+                    <option value="switch">Single Step (Two Banks)</option>
+                    <option value="press">Press Down/Release</option>
+                    <option value="longstep">Long Step</option>
+                </select>
+
+                <div class="field-group">
+                    <h3>Bank A Settings</h3>
+                    <label for="messageTypeA">Message Type A:</label>
+                    <select id="messageTypeA">
+                        <option value="PC">Program Change (PC)</option>
+                        <option value="CC">Control Change (CC)</option>
+                        <option value="NOTE">Note</option>
+                    </select>
+
+                    <label for="channelA">Channel A:</label>
+                    <input type="number" id="channelA" min="1" max="16" value="1">
+
+                    <div id="bankAFields">
+                        <label id="dataALabel">Data A:</label>
+                        <input type="number" id="dataA" min="0" max="127" value="0">
+                        <label id="valueALabel" style="display: none;">Value A:</label>
+                        <input type="number" id="valueA" min="0" max="127" value="0" style="display: none;">
+                    </div>
+
+                    <label for="screenTextA">Screen Text A:</label>
+                    <input type="text" id="screenTextA" maxlength="15" value="">
+
+                    <label for="screenColorA">Screen Color A:</label>
+                    <input type="color" id="screenColorA" value="#FFFF00">
+                </div>
+
+                <div class="field-group" id="bankBSettings" style="display: none;">
+                    <h3>Bank B Settings</h3>
+                    <label for="messageTypeB">Message Type B:</label>
+                    <select id="messageTypeB">
+                        <option value="PC">Program Change (PC)</option>
+                        <option value="CC">Control Change (CC)</option>
+                        <option value="NOTE">Note</option>
+                    </select>
+
+                    <label for="channelB">Channel B:</label>
+                    <input type="number" id="channelB" min="1" max="16" value="1">
+
+                    <div id="bankBFields">
+                        <label id="dataBLabel">Data B:</label>
+                        <input type="number" id="dataB" min="0" max="127" value="0">
+                        <label id="valueBLabel" style="display: none;">Value B:</label>
+                        <input type="number" id="valueB" min="0" max="127" value="0" style="display: none;">
+                    </div>
+
+                    <label for="screenTextB">Screen Text B:</label>
+                    <input type="text" id="screenTextB" maxlength="15" value="">
+
+                    <label for="screenColorB">Screen Color B:</label>
+                    <input type="color" id="screenColorB" value="#FFFF00">
+                </div>
+
+                <button type="button" id="saveButton" disabled>Save Settings</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // === Global Variables ===
+        let port;
+        let reader;
+        let writer;
+        let isConnected = false;
+        let receivedData = false;
+        let dataTimeout;
+        let activeButton = null;
+        let currentBank = 'Bank 1';
+
+        const connectionStatus = document.getElementById("connectionStatus");
+        const connectButton = document.getElementById("connectButton");
+        const loadButton = document.getElementById("loadButton");
+        const saveButton = document.getElementById("saveButton");
+        const clearEEPROMButton = document.getElementById("clearEEPROMButton");
+        const alertBox = document.getElementById("alert");
+        const currentBankDisplay = document.getElementById("currentBankDisplay");
+        const currentButtonDisplay = document.getElementById("currentButtonDisplay");
+        const bankSelect = document.getElementById("bankSelect");
+        const modeSelect = document.getElementById("mode");
+        const messageTypeA = document.getElementById("messageTypeA");
+        const messageTypeB = document.getElementById("messageTypeB");
+        const channelA = document.getElementById("channelA");
+        const channelB = document.getElementById("channelB");
+        const dataA = document.getElementById("dataA");
+        const dataB = document.getElementById("dataB");
+        const valueA = document.getElementById("valueA");
+        const valueB = document.getElementById("valueB");
+        const dataALabel = document.getElementById("dataALabel");
+        const valueALabel = document.getElementById("valueALabel");
+        const dataBLabel = document.getElementById("dataBLabel");
+        const valueBLabel = document.getElementById("valueBLabel");
+        const bankAFields = document.getElementById("bankAFields");
+        const bankBFields = document.getElementById("bankBFields");
+        const bankBSettings = document.getElementById("bankBSettings");
+        const screenTextA = document.getElementById("screenTextA");
+        const screenTextB = document.getElementById("screenTextB");
+        const screenColorA = document.getElementById("screenColorA");
+        const screenColorB = document.getElementById("screenColorB");
+
+        // Mode mapping for ESP32
+        const modeMap = {
+            '1': 'single',
+            '2': 'switch',
+            '3': 'press',
+            '4': 'longstep'
+        };
+
+        // Data structures
+        const buttonSettings = {
+            'Bank 1': {},
+            'Bank 2': {},
+            'Bank 3': {},
+            'Bank 4': {}
+        };
+        const buttonColors = {
+            'Bank 1': {},
+            'Bank 2': {},
+            'Bank 3': {},
+            'Bank 4': {}
+        };
+        const buttonBankStates = {
+            'Bank 1': {},
+            'Bank 2': {},
+            'Bank 3': {},
+            'Bank 4': {}
+        };
+
+        // Initialize button settings
+        document.querySelectorAll('.button').forEach(button => {
+            const buttonNum = button.getAttribute('data-button');
+            ['Bank 1', 'Bank 2', 'Bank 3', 'Bank 4'].forEach(bank => {
+                buttonSettings[bank][buttonNum] = {
+                    mode: 'single',
+                    messageType: { a: 'PC', b: 'PC' },
+                    channel: { a: 1, b: 1 },
+                    data: { a: 0, b: 0 },
+                    value: { a: 0, b: 0 },
+                    screenText: { a: `SW-${buttonNum} A`, b: `SW-${buttonNum} B` }
+                };
+                buttonColors[bank][buttonNum] = { a: '#FFFF00', b: '#FFFF00' };
+                buttonBankStates[bank][buttonNum] = 'A';
+            });
+        });
+
+        // === Utility Functions ===
+        function showAlert(message, type) {
+            alertBox.textContent = message;
+            alertBox.className = `alert ${type}`;
+            alertBox.style.display = 'block';
+            setTimeout(() => alertBox.style.display = 'none', 7000); // ยืดเวลาแจ้งเตือน
+        }
+
+        function updateFieldsBasedOnMessageType(bank, messageType, dataInput, valueInput, dataLabel, valueLabel) {
+            dataLabel.style.display = 'block';
+            valueLabel.style.display = 'none';
+            dataInput.style.display = 'block';
+            valueInput.style.display = 'none';
+
+            if (messageType === 'PC') {
+                dataLabel.textContent = 'Program Number:';
+            } else if (messageType === 'CC') {
+                dataLabel.textContent = 'Control Number:';
+                valueLabel.textContent = 'Control Value:';
+                valueInput.style.display = 'block';
+                valueLabel.style.display = 'block';
+            } else if (messageType === 'NOTE') {
+                dataLabel.textContent = 'Note Number:';
+                valueLabel.textContent = 'Velocity:';
+                valueInput.style.display = 'block';
+                valueLabel.style.display = 'block';
+            }
+        }
+
+        function updateBankBVisibility() {
+            const mode = modeSelect.value;
+            const showBankB = mode === 'switch' || mode === 'press' || mode === 'longstep';
+            bankBSettings.style.display = showBankB ? 'block' : 'none';
+        }
+
+        // === Serial Connection ===
+        async function connectSerial() {
+            if (!navigator.serial) {
+                showAlert('Web Serial API ไม่รองรับ กรุณาใช้ Chrome, Edge หรือ Opera ล่าสุด', 'error');
+                console.log('DEBUG: Web Serial API not supported');
+                return;
+            }
+
+            if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                showAlert('ต้องรันผ่าน HTTPS หรือ localhost เพื่อใช้ Web Serial API', 'error');
+                console.log('DEBUG: Page not served over HTTPS or localhost');
+                return;
+            }
+
+            try {
+                if (isConnected) {
+                    showAlert('เชื่อมต่ออยู่แล้ว กรุณายกเลิกการเชื่อมต่อก่อน', 'error');
+                    console.log('DEBUG: Already connected');
+                    return;
+                }
+
+                console.log('DEBUG: Requesting serial port');
+                port = await navigator.serial.requestPort();
+                if (!port) {
+                    showAlert('ไม่ได้เลือกพอร์ต Serial กรุณาเลือกพอร์ต', 'error');
+                    console.log('DEBUG: No port selected');
+                    return;
+                }
+
+                console.log('DEBUG: Opening port with baudRate 115200');
+                await port.open({ baudRate: 115200 });
+                console.log('DEBUG: Port opened successfully');
+
+                writer = port.writable.getWriter();
+                reader = port.readable.getReader();
+                isConnected = true;
+
+                connectionStatus.textContent = 'Connected';
+                connectionStatus.classList.remove('disconnected');
+                connectionStatus.classList.add('connected');
+                connectButton.textContent = 'Disconnect';
+                loadButton.disabled = false;
+                saveButton.disabled = false;
+                clearEEPROMButton.disabled = false;
+
+                showAlert('เชื่อมต่อพอร์ต Serial สำเร็จ!', 'success');
+                console.log('DEBUG: Starting readLoop');
+                readLoop();
+            } catch (error) {
+                showAlert(`ไม่สามารถเชื่อมต่อ Serial ได้: ${error.message}. ตรวจสอบว่า ESP32 เชื่อมต่ออยู่, ไดรเวอร์ติดตั้งแล้ว, และไม่มีโปรแกรมอื่นใช้พอร์ต`, 'error');
+                console.log('DEBUG: Serial connection error:', error);
+                await disconnectSerial();
+            }
+        }
+
+        async function disconnectSerial() {
+            try {
+                if (reader) {
+                    await reader.cancel().catch(() => {});
+                    reader.releaseLock();
+                    reader = null;
+                    console.log('DEBUG: Reader released');
+                }
+                if (writer) {
+                    writer.releaseLock();
+                    writer = null;
+                    console.log('DEBUG: Writer released');
+                }
+                if (port) {
+                    await port.close();
+                    port = null;
+                    console.log('DEBUG: Port closed');
+                }
+                isConnected = false;
+                connectionStatus.textContent = 'Disconnected';
+                connectionStatus.classList.remove('connected');
+                connectionStatus.classList.add('disconnected');
+                connectButton.textContent = 'Connect to Serial';
+                loadButton.disabled = true;
+                saveButton.disabled = true;
+                clearEEPROMButton.disabled = true;
+                showAlert('ยกเลิกการเชื่อมต่อ Serial', 'info');
+            } catch (error) {
+                showAlert(`ข้อผิดพลาดในการยกเลิกการเชื่อมต่อ: ${error.message}`, 'error');
+                console.log('DEBUG: Disconnect error:', error);
+            }
+        }
+
+        // === Serial Communication ===
+        async function readLoop() {
+            let buffer = '';
+            while (isConnected && reader) {
+                try {
+                    const { value, done } = await reader.read();
+                    if (done) {
+                        console.log('DEBUG: Reader done, disconnecting');
+                        await disconnectSerial();
+                        break;
+                    }
+                    const text = new TextDecoder().decode(value);
+                    buffer += text;
+
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+                    for (const line of lines) {
+                        const trimmedLine = line.trim();
+                        if (trimmedLine) {
+                            console.log('DEBUG: Received from ESP32:', trimmedLine);
+                            processReceivedData(trimmedLine);
+                        }
+                    }
+                } catch (error) {
+                    showAlert(`ข้อผิดพลาดในการอ่าน Serial: ${error.message}. อาจเกิดจาก ESP32 ถอดการเชื่อมต่อ`, 'error');
+                    console.log('DEBUG: Read loop error:', error);
+                    await disconnectSerial();
+                    break;
+                }
+            }
+        }
+
+        async function sendCommand(command) {
+            if (!isConnected || !writer) {
+                showAlert('กรุณาเชื่อมต่อพอร์ต Serial ก่อนส่งคำสั่ง', 'error');
+                console.log('DEBUG: Cannot send command, not connected');
+                return false;
+            }
+            try {
+                console.log('DEBUG: Sending command:', command);
+                const data = new TextEncoder().encode(command);
+                await writer.write(data);
+                await new Promise(resolve => setTimeout(resolve, 100));
+                return true;
+            } catch (error) {
+                showAlert(`ไม่สามารถส่งคำสั่งได้: ${error.message}`, 'error');
+                console.log('DEBUG: Send command error:', error);
+                return false;
+            }
+        }
+
+        // === Load Settings ===
+        async function loadSettings() {
+            if (!isConnected) {
+                showAlert('กรุณาเชื่อมต่อพอร์ต Serial ก่อนโหลดการตั้งค่า', 'error');
+                console.log('DEBUG: Cannot load settings, not connected');
+                return;
+            }
+
+            showAlert('กำลังโหลดการตั้งค่าจาก ESP32...', 'info');
+            receivedData = false;
+
+            try {
+                const maxRetries = 5;
+                let attempt = 0;
+                while (attempt < maxRetries && !receivedData) {
+                    attempt++;
+                    console.log(`DEBUG: Attempt ${attempt} to send GET_STATUS`);
+                    await sendCommand('GET_STATUS\n');
+                    await new Promise(resolve => setTimeout(resolve, 5000));
+                }
+
+                dataTimeout = setTimeout(() => {
+                    if (!receivedData) {
+                        showAlert('ไม่ได้รับการตั้งค่าจาก ESP32 หลังจากลองหลายครั้ง ตรวจสอบว่า ESP32 ทำงานปกติ', 'error');
+                    }
+                }, 30000);
+            } catch (error) {
+                showAlert(`ข้อผิดพลาดในการขอการตั้งค่า: ${error.message}`, 'error');
+                console.log('DEBUG: Load settings error:', error);
+                clearTimeout(dataTimeout);
+            }
+        }
+
+        // === Process Received Data ===
+        function processReceivedData(text) {
+            console.log('DEBUG: Processing received data:', text);
+            receivedData = true;
+            clearTimeout(dataTimeout);
+
+            if (text.match(/SET_OK/i)) {
+                showAlert('บันทึกการตั้งค่าสำเร็จ!', 'success');
+                loadSettings();
+                return;
+            }
+
+            if (text.match(/ERROR|Invalid|WARNING/i)) {
+                showAlert(`ESP32 ตอบกลับข้อผิดพลาด: ${text}`, 'error');
+                console.log('DEBUG: ESP32 error response:', text);
+                return;
+            }
+
+            const statusRegex = /STATUS:(\d+)\|(\d+)\|((?:\d+:[1-4],(?:PC|CC|NOTE|),[^,]*,\d*,(?:\d*,)?\d*,(?:PC|CC|NOTE|),[^,]*,\d*,(?:\d*,)?\d*,[^,|]*,[^,|]*,[0-9A-F]{6},[0-9A-F]{6},[AB]\|)+)/i;
+            const match = text.match(statusRegex);
+
+            if (!match) {
+                showAlert(`ข้อมูลจาก ESP32 ไม่ถูกต้อง: ${text}`, 'error');
+                console.log('DEBUG: statusRegex failed to match:', text);
+                return;
+            }
+
+            const [, bank, currentButton, buttonData] = match;
+            const bankNum = parseInt(bank);
+            const currentButtonNum = parseInt(currentButton);
+
+            if (bankNum < 1 || bankNum > 4) {
+                showAlert(`หมายเลข Bank ไม่ถูกต้อง: ${bankNum}`, 'error');
+                console.log('DEBUG: Invalid bank number:', bankNum);
+                return;
+            }
+
+            currentBank = `Bank ${bankNum}`;
+            currentBankDisplay.textContent = bankNum;
+            currentButtonDisplay.textContent = currentButtonNum;
+            bankSelect.value = currentBank;
+
+            const buttonRegex = /(\d+):([1-4]),([A-Z]{0,4}),([^,]*),([^,]*),([^,]*),([A-Z]{0,4}),([^,]*),([^,]*),([^,]*),([^,|]*),([^,|]*),([0-9A-F]{6}),([0-9A-F]{6}),([AB])/gi;
+            let buttonMatch;
+
+            while ((buttonMatch = buttonRegex.exec(buttonData))) {
+                const [
+                    , buttonNum, modeNum, typeA, data1A, valueAOpt, channelA, typeB, data1B, valueBOpt, channelB,
+                    screenTextAVal, screenTextBVal, screenColorAVal, screenColorBVal, bankState
+                ] = buttonMatch;
+
+                if (buttonNum < 1 || buttonNum > 6) {
+                    console.log(`DEBUG: Invalid button number: ${buttonNum}`);
+                    continue;
+                }
+
+                const modeValue = modeMap[modeNum] || 'single';
+
+                if (!buttonSettings[currentBank][buttonNum]) {
+                    buttonSettings[currentBank][buttonNum] = {
+                        mode: modeValue,
+                        messageType: { a: 'PC', b: 'PC' },
+                        channel: { a: 1, b: 1 },
+                        data: { a: 0, b: 0 },
+                        value: { a: 0, b: 0 },
+                        screenText: { a: `SW-${buttonNum} A`, b: `SW-${buttonNum} B` }
+                    };
+                }
+                if (!buttonColors[currentBank][buttonNum]) {
+                    buttonColors[currentBank][buttonNum] = { a: '#FFFF00', b: '#FFFF00' };
+                }
+                if (!buttonBankStates[currentBank][buttonNum]) {
+                    buttonBankStates[currentBank][buttonNum] = 'A';
+                }
+
+                const settings = buttonSettings[currentBank][buttonNum];
+                settings.mode = modeValue;
+                settings.messageType.a = typeA || 'PC';
+                settings.messageType.b = typeB || 'PC';
+                settings.channel.a = parseInt(channelA) || 1;
+                settings.channel.b = parseInt(channelB) || 1;
+                settings.data.a = parseInt(data1A) || 0;
+                settings.data.b = parseInt(data1B) || 0;
+                settings.value.a = parseInt(valueAOpt) || 0;
+                settings.value.b = parseInt(valueBOpt) || 0;
+                settings.screenText.a = screenTextAVal.trim() || `SW-${buttonNum} A`;
+                settings.screenText.b = screenTextBVal.trim() || `SW-${buttonNum} B`;
+                buttonColors[currentBank][buttonNum].a = `#${screenColorAVal}`;
+                buttonColors[currentBank][buttonNum].b = `#${screenColorBVal}`;
+                buttonBankStates[currentBank][buttonNum] = bankState;
+
+                if (modeValue === 'single') {
+                    settings.messageType.b = settings.messageType.a;
+                    settings.channel.b = settings.channel.a;
+                    settings.data.b = settings.data.a;
+                    settings.value.b = settings.value.a;
+                    settings.screenText.b = settings.screenText.a;
+                    buttonColors[currentBank][buttonNum].b = buttonColors[currentBank][buttonNum].a;
+                }
+
+                console.log(`DEBUG: Processed button ${buttonNum}:`, settings);
+            }
+
+            showAlert('โหลดการตั้งค่าสำเร็จ!', 'success');
+            updateUI();
+            const activeBtn = document.querySelector(`.button[data-button="${currentButtonNum}"]`);
+            if (activeBtn) {
+                selectButton(activeBtn);
+            }
+        }
+
+        // === Save Settings ===
+        async function saveSettings() {
+            if (!isConnected || !activeButton) {
+                showAlert('กรุณาเชื่อมต่อและเลือกปุ่ม', 'error');
+                console.log('DEBUG: Cannot save settings, not connected or no button selected');
+                return false;
+            }
+
+            const buttonValue = activeButton.getAttribute('data-button');
+            const settings = buttonSettings[currentBank][buttonValue];
+            const bankNum = currentBank.replace('Bank ', '');
+
+            const modeNum = Object.keys(modeMap).find(key => modeMap[key] === settings.mode) || '1';
+            const midiTypeA = settings.messageType.a.toUpperCase();
+            const midiTypeB = settings.messageType.b ? settings.messageType.b.toUpperCase() : settings.messageType.a.toUpperCase();
+            const channelAVal = settings.channel.a || 1;
+            const channelBVal = settings.channel.b || 1;
+            const dataAVal = settings.data.a || 0;
+            const dataBVal = settings.data.b || 0;
+            const valueAVal = settings.value.a || 0;
+            const valueBVal = settings.value.b || 0;
+            const screenTextAVal = settings.screenText.a.trim().replace(/"/g, '').replace(/,/g, '') || `SW-${buttonValue} A`;
+            const screenTextBVal = settings.screenText.b.trim().replace(/"/g, '').replace(/,/g, '') || (modeNum === '1' ? screenTextAVal : `SW-${buttonValue} B`);
+            const screenColorAVal = (buttonColors[currentBank][buttonValue].a || '#FFFF00').slice(1).toUpperCase();
+            const screenColorBVal = (buttonColors[currentBank][buttonValue].b || '#FFFF00').slice(1).toUpperCase();
+
+            // ตรวจสอบความถูกต้องของข้อมูล
+            if (dataAVal < 0 || dataAVal > 127 || dataBVal < 0 || dataBVal > 127 ||
+                valueAVal < 0 || valueAVal > 127 || valueBVal < 0 || valueBVal > 127) {
+                showAlert('ข้อมูล MIDI ต้องอยู่ระหว่าง 0-127', 'error');
+                return false;
+            }
+            if (channelAVal < 1 || channelAVal > 16 || channelBVal < 1 || channelBVal > 16) {
+                showAlert('ช่อง MIDI ต้องอยู่ระหว่าง 1-16', 'error');
+                return false;
+            }
+            if (screenTextAVal.length > 15 || screenTextBVal.length > 15) {
+                showAlert('ข้อความหน้าจอต้องไม่เกิน 15 ตัวอักษร', 'error');
+                return false;
+            }
+
+            // สร้างคำสั่ง SET
+            let cmd = `B ${bankNum} S ${buttonValue} MODE ${modeNum}`;
+            cmd += ` BANK A ${midiTypeA} ${dataAVal}`;
+            if (midiTypeA !== 'PC') cmd += ` ${valueAVal}`;
+            cmd += ` CHANNEL_A ${channelAVal}`;
+
+            if (modeNum !== '1') {
+                cmd += ` BANK B ${midiTypeB} ${dataBVal}`;
+                if (midiTypeB !== 'PC') cmd += ` ${valueBVal}`;
+                cmd += ` CHANNEL_B ${channelBVal}`;
+            }
+
+            cmd += ` SCREEN_TEXT_A "${screenTextAVal}"`;
+            cmd += ` SCREEN_TEXT_B "${screenTextBVal}"`;
+            cmd += ` SCREEN_COLOR_A ${screenColorAVal}`;
+            cmd += ` SCREEN_COLOR_B ${screenColorBVal}\n`;
+
+            try {
+                const success = await sendCommand(cmd);
+                if (success) {
+                    showAlert('กำลังบันทึกการตั้งค่า...', 'info');
+                    return new Promise((resolve) => {
+                        const timeout = setTimeout(() => {
+                            showAlert('ไม่ได้รับการตอบสนอง SET_OK จาก ESP32', 'error');
+                            resolve(false);
+                        }, 5000);
+                        const checkResponse = () => {
+                            if (receivedData) {
+                                clearTimeout(timeout);
+                                resolve(true);
+                            } else {
+                                setTimeout(checkResponse, 100);
+                            }
+                        };
+                        checkResponse();
+                    });
+                }
+                return false;
+            } catch (error) {
+                showAlert(`ข้อผิดพลาดในการบันทึก: ${error.message}`, 'error');
+                console.log('DEBUG: Save settings error:', error);
+                return false;
+            }
+        }
+
+        // === UI Management ===
+        function updateUI() {
+            document.querySelectorAll('.button').forEach(button => {
+                const buttonId = button.getAttribute('data-button');
+                const color = buttonColors[currentBank][buttonId]?.a || '#FFFFFF';
+                button.style.backgroundColor = color;
+                const settings = buttonSettings[currentBank][buttonId];
+                button.textContent = settings?.screenText.a || `Button ${buttonId}`;
+            });
+
+            if (activeButton) {
+                const buttonValue = activeButton.getAttribute('data-button');
+                const settings = buttonSettings[currentBank][buttonValue] || {};
+                modeSelect.value = settings.mode || 'single';
+                messageTypeA.value = settings.messageType?.a || 'PC';
+                messageTypeB.value = settings.messageType?.b || 'PC';
+                channelA.value = settings.channel?.a || 1;
+                channelB.value = settings.channel?.b || 1;
+                dataA.value = settings.data?.a || 0;
+                dataB.value = settings.data?.b || 0;
+                valueA.value = settings.value?.a || 0;
+                valueB.value = settings.value?.b || 0;
+                screenTextA.value = settings.screenText?.a || '';
+                screenTextB.value = settings.screenText?.b || '';
+                screenColorA.value = buttonColors[currentBank][buttonValue]?.a || '#FFFF00';
+                screenColorB.value = buttonColors[currentBank][buttonValue]?.b || '#FFFF00';
+
+                updateFieldsBasedOnMessageType('A', messageTypeA.value, dataA, valueA, dataALabel, valueALabel);
+                updateFieldsBasedOnMessageType('B', messageTypeB.value, dataB, valueB, dataBLabel, valueBLabel);
+                updateBankBVisibility();
+            } else {
+                updateBankBVisibility();
+            }
+        }
+
+        function selectButton(button) {
+            document.querySelectorAll('.button').forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            activeButton = button;
+            currentButtonDisplay.textContent = button.getAttribute('data-button');
+            updateUI();
+        }
+
+        // === Event Listeners ===
+        connectButton.addEventListener('click', async () => {
+            if (isConnected) {
+                await disconnectSerial();
+            } else {
+                await connectSerial();
+            }
+        });
+
+        loadButton.addEventListener('click', loadSettings);
+
+        saveButton.addEventListener('click', async () => {
+            if (!activeButton) {
+                showAlert('กรุณาเลือกปุ่ม', 'error');
+                return;
+            }
+            const buttonValue = activeButton.getAttribute('data-button');
+            const settings = buttonSettings[currentBank][buttonValue] || {};
+            settings.mode = modeSelect.value;
+            settings.messageType = { a: messageTypeA.value, b: messageTypeB.value };
+            settings.channel = { a: parseInt(channelA.value) || 1, b: parseInt(channelB.value) || 1 };
+            settings.data = { a: parseInt(dataA.value) || 0, b: parseInt(dataB.value) || 0 };
+            settings.value = { a: parseInt(valueA.value) || 0, b: parseInt(valueB.value) || 0 };
+            settings.screenText = { 
+                a: screenTextA.value.trim() || `SW-${buttonValue} A`, 
+                b: screenTextB.value.trim() || (settings.mode === 'single' ? settings.screenText.a : `SW-${buttonValue} B`) 
+            };
+            buttonColors[currentBank][buttonValue] = { a: screenColorA.value, b: screenColorB.value };
+
+            if (settings.mode === 'single') {
+                settings.messageType.b = settings.messageType.a;
+                settings.channel.b = settings.channel.a;
+                settings.data.b = settings.data.a;
+                settings.value.b = settings.value.a;
+                settings.screenText.b = settings.screenText.a;
+                buttonColors[currentBank][buttonValue].b = buttonColors[currentBank][buttonValue].a;
+            }
+
+            buttonSettings[currentBank][buttonValue] = settings;
+            updateUI();
+            await saveSettings();
+        });
+
+        clearEEPROMButton.addEventListener('click', async () => {
+            if (!isConnected) {
+                showAlert('กรุณาเชื่อมต่อพอร์ต Serial', 'error');
+                return;
+            }
+            if (confirm('คุณแน่ใจหรือไม่ว่าต้องการล้าง EEPROM?')) {
+                const success = await sendCommand('CLEAR_EEPROM\n');
+                if (success) {
+                    showAlert('กำลังล้าง EEPROM...', 'info');
+                }
+            }
+        });
+
+        bankSelect.addEventListener('change', () => {
+            currentBank = bankSelect.value;
+            currentBankDisplay.textContent = currentBank.replace('Bank ', '');
+            updateUI();
+            if (activeButton) {
+                selectButton(activeButton);
+            }
+        });
+
+        document.querySelectorAll('.button').forEach(button => {
+            button.addEventListener('click', () => {
+                selectButton(button);
+            });
+        });
+
+        modeSelect.addEventListener('change', () => {
+            if (activeButton) {
+                const buttonValue = activeButton.getAttribute('data-button');
+                buttonSettings[currentBank][buttonValue].mode = modeSelect.value;
+            }
+            updateBankBVisibility();
+            updateUI();
+        });
+
+        messageTypeA.addEventListener('change', () => {
+            if (activeButton) {
+                const buttonValue = activeButton.getAttribute('data-button');
+                buttonSettings[currentBank][buttonValue].messageType.a = messageTypeA.value;
+                updateFieldsBasedOnMessageType('A', messageTypeA.value, dataA, valueA, dataALabel, valueALabel);
+                updateUI();
+            }
+        });
+
+        messageTypeB.addEventListener('change', () => {
+            if (activeButton) {
+                const buttonValue = activeButton.getAttribute('data-button');
+                buttonSettings[currentBank][buttonValue].messageType.b = messageTypeB.value;
+                updateFieldsBasedOnMessageType('B', messageTypeB.value, dataB, valueB, dataBLabel, valueBLabel);
+                updateUI();
+            }
+        });
+
+        // Select Button 5 on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            const button5 = document.querySelector('.button[data-button="5"]');
+            if (button5) {
+                selectButton(button5);
+            }
+            updateBankBVisibility();
+            updateUI();
+        });
+    </script>
+</body>
+</html>
