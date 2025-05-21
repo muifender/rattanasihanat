@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>M6 MIDI Editor</title>
+    <title>P6 MIDI Editor</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -38,6 +38,7 @@
             margin-bottom: 10px;
         }
         .connected { color: green; }
+        .connected.bluetooth { color: #17a2b8; }
         .disconnected { color: red; }
         .button-grid {
             display: grid;
@@ -78,12 +79,19 @@
             cursor: pointer;
             border: none;
         }
+        #connectBluetoothButton {
+            margin-top: 10px;
+            background-color: #17a2b8;
+        }
         button:disabled {
             background-color: #6c757d;
             cursor: not-allowed;
         }
         button:hover:not(:disabled) {
             background-color: #0056b3;
+        }
+        #connectBluetoothButton:hover:not(:disabled) {
+            background-color: #138496;
         }
         .settings-form {
             background-color: #fff;
@@ -107,6 +115,31 @@
             font-size: 16px;
             color: #007bff;
         }
+        .cc-message-group {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        .cc-message-group label {
+            display: inline-block;
+            width: 120px;
+        }
+        .cc-message-group input {
+            width: 80px;
+            margin-right: 10px;
+        }
+        .sw-info-texts {
+            margin-top: 20px;
+        }
+        .sw-info-texts label {
+            display: block;
+            margin: 5px 0 2px;
+        }
+        .sw-info-texts input {
+            width: 100%;
+            max-width: 200px;
+        }
     </style>
 </head>
 <body>
@@ -114,6 +147,7 @@
         <div class="left-panel">
             <div id="connectionStatus" class="connection-status disconnected">Disconnected</div>
             <button id="connectButton">Connect to Serial</button>
+            <button id="connectBluetoothButton">Connect to Bluetooth</button>
             <button id="loadButton" disabled>Load Settings</button>
             <button id="clearEEPROMButton" disabled>Clear EEPROM</button>
             <div id="alert" class="alert"></div>
@@ -135,6 +169,21 @@
                 <div class="button" data-button="5">Button 5</div>
                 <div class="button" data-button="6">Button 6</div>
             </div>
+            <div class="sw-info-texts">
+                <h3>Sw-Info Texts</h3>
+                <label for="swInfoText1">SW-1 Text:</label>
+                <input type="text" id="swInfoText1" maxlength="15" value="">
+                <label for="swInfoText2">SW-2 Text:</label>
+                <input type="text" id="swInfoText2" maxlength="15" value="">
+                <label for="swInfoText3">SW-3 Text:</label>
+                <input type="text" id="swInfoText3" maxlength="15" value="">
+                <label for="swInfoText4">SW-4 Text:</label>
+                <input type="text" id="swInfoText4" maxlength="15" value="">
+                <label for="swInfoText5">SW-5 Text:</label>
+                <input type="text" id="swInfoText5" maxlength="15" value="">
+                <label for="swInfoText6">SW-6 Text:</label>
+                <input type="text" id="swInfoText6" maxlength="15" value="">
+            </div>
         </div>
         <div class="right-panel">
             <form id="settings-form" class="settings-form">
@@ -154,25 +203,56 @@
                         <option value="CC">Control Change (CC)</option>
                         <option value="NOTE">Note</option>
                     </select>
-
                     <label for="channelA">Channel A:</label>
                     <input type="number" id="channelA" min="1" max="16" value="1">
-
                     <div id="bankAFields">
-                        <label id="dataALabel">Data A:</label>
-                        <input type="number" id="dataA" min="0" max="127" value="0">
-                        <label id="valueALabel" style="display: none;">Value A:</label>
-                        <input type="number" id="valueA" min="0" max="127" value="0" style="display: none;">
+                        <div id="ccMessagesA" class="cc-message-group" style="display: none;">
+                            <h4>CC Messages (Bank A)</h4>
+                            <div>
+                                <label>Message 1 - Control:</label>
+                                <input type="number" class="cc-control-a" data-index="0" min="0" max="127" value="0">
+                                <label>Value:</label>
+                                <input type="number" class="cc-value-a" data-index="0" min="0" max="127" value="0">
+                            </div>
+                            <div>
+                                <label>Message 2 - Control:</label>
+                                <input type="number" class="cc-control-a" data-index="1" min="0" max="127" value="0">
+                                <label>Value:</label>
+                                <input type="number" class="cc-value-a" data-index="1" min="0" max="127" value="0">
+                            </div>
+                            <div>
+                                <label>Message 3 - Control:</label>
+                                <input type="number" class="cc-control-a" data-index="2" min="0" max="127" value="0">
+                                <label>Value:</label>
+                                <input type="number" class="cc-value-a" data-index="2" min="0" max="127" value="0">
+                            </div>
+                            <div>
+                                <label>Message 4 - Control:</label>
+                                <input type="number" class="cc-control-a" data-index="3" min="0" max="127" value="0">
+                                <label>Value:</label>
+                                <input type="number" class="cc-value-a" data-index="3" min="0" max="127" value="0">
+                            </div>
+                            <div>
+                                <label>Message 5 - Control:</label>
+                                <input type="number" class="cc-control-a" data-index="4" min="0" max="127" value="0">
+                                <label>Value:</label>
+                                <input type="number" class="cc-value-a" data-index="4" min="0" max="127" value="0">
+                            </div>
+                        </div>
+                        <div id="dataFieldsA">
+                            <label id="dataALabel">Data A:</label>
+                            <input type="number" id="dataA" min="0" max="127" value="0">
+                            <label id="valueALabel" style="display: none;">Value A:</label>
+                            <input type="number" id="valueA" min="0" max="127" value="0" style="display: none;">
+                        </div>
                     </div>
-
                     <label for="screenTextA">Screen Text A:</label>
                     <input type="text" id="screenTextA" maxlength="15" value="">
-
                     <label for="screenColorA">Screen Color A:</label>
                     <input type="color" id="screenColorA" value="#FFFF00">
                 </div>
 
-                <div class="field-group" id="bankBSettings" style="display: none;">
+                <div class="field-group" id="bankBSettings">
                     <h3>Bank B Settings</h3>
                     <label for="messageTypeB">Message Type B:</label>
                     <select id="messageTypeB">
@@ -180,20 +260,51 @@
                         <option value="CC">Control Change (CC)</option>
                         <option value="NOTE">Note</option>
                     </select>
-
                     <label for="channelB">Channel B:</label>
                     <input type="number" id="channelB" min="1" max="16" value="1">
-
                     <div id="bankBFields">
-                        <label id="dataBLabel">Data B:</label>
-                        <input type="number" id="dataB" min="0" max="127" value="0">
-                        <label id="valueBLabel" style="display: none;">Value B:</label>
-                        <input type="number" id="valueB" min="0" max="127" value="0" style="display: none;">
+                        <div id="ccMessagesB" class="cc-message-group" style="display: none;">
+                            <h4>CC Messages (Bank B)</h4>
+                            <div>
+                                <label>Message 1 - Control:</label>
+                                <input type="number" class="cc-control-b" data-index="0" min="0" max="127" value="0">
+                                <label>Value:</label>
+                                <input type="number" class="cc-value-b" data-index="0" min="0" max="127" value="0">
+                            </div>
+                            <div>
+                                <label>Message 2 - Control:</label>
+                                <input type="number" class="cc-control-b" data-index="1" min="0" max="127" value="0">
+                                <label>Value:</label>
+                                <input type="number" class="cc-value-b" data-index="1" min="0" max="127" value="0">
+                            </div>
+                            <div>
+                                <label>Message 3 - Control:</label>
+                                <input type="number" class="cc-control-b" data-index="2" min="0" max="127" value="0">
+                                <label>Value:</label>
+                                <input type="number" class="cc-value-b" data-index="2" min="0" max="127" value="0">
+                            </div>
+                            <div>
+                                <label>Message 4 - Control:</label>
+                                <input type="number" class="cc-control-b" data-index="3" min="0" max="127" value="0">
+                                <label>Value:</label>
+                                <input type="number" class="cc-value-b" data-index="3" min="0" max="127" value="0">
+                            </div>
+                            <div>
+                                <label>Message 5 - Control:</label>
+                                <input type="number" class="cc-control-b" data-index="4" min="0" max="127" value="0">
+                                <label>Value:</label>
+                                <input type="number" class="cc-value-b" data-index="4" min="0" max="127" value="0">
+                            </div>
+                        </div>
+                        <div id="dataFieldsB">
+                            <label id="dataBLabel">Data B:</label>
+                            <input type="number" id="dataB" min="0" max="127" value="0">
+                            <label id="valueBLabel" style="display: none;">Value B:</label>
+                            <input type="number" id="valueB" min="0" max="127" value="0" style="display: none;">
+                        </div>
                     </div>
-
                     <label for="screenTextB">Screen Text B:</label>
                     <input type="text" id="screenTextB" maxlength="15" value="">
-
                     <label for="screenColorB">Screen Color B:</label>
                     <input type="color" id="screenColorB" value="#FFFF00">
                 </div>
@@ -205,17 +316,20 @@
 
     <script>
         // === Global Variables ===
-        let port;
-        let reader;
-        let writer;
+        let port, reader, writer;
         let isConnected = false;
-        let receivedData = false;
-        let dataTimeout;
+        let bluetoothDevice = null;
+        let bluetoothCharacteristic = null;
+        let bluetoothConnected = false;
         let activeButton = null;
         let currentBank = 'Bank 1';
+        let readLoopRunning = false;
+        let bluetoothBuffer = '';
+        let pendingResponse = null; // Track expected response
 
         const connectionStatus = document.getElementById("connectionStatus");
         const connectButton = document.getElementById("connectButton");
+        const connectBluetoothButton = document.getElementById("connectBluetoothButton");
         const loadButton = document.getElementById("loadButton");
         const saveButton = document.getElementById("saveButton");
         const clearEEPROMButton = document.getElementById("clearEEPROMButton");
@@ -236,13 +350,23 @@
         const valueALabel = document.getElementById("valueALabel");
         const dataBLabel = document.getElementById("dataBLabel");
         const valueBLabel = document.getElementById("valueBLabel");
-        const bankAFields = document.getElementById("bankAFields");
-        const bankBFields = document.getElementById("bankBFields");
         const bankBSettings = document.getElementById("bankBSettings");
+        const ccMessagesA = document.getElementById("ccMessagesA");
+        const ccMessagesB = document.getElementById("ccMessagesB");
+        const dataFieldsA = document.getElementById("dataFieldsA");
+        const dataFieldsB = document.getElementById("dataFieldsB");
         const screenTextA = document.getElementById("screenTextA");
         const screenTextB = document.getElementById("screenTextB");
         const screenColorA = document.getElementById("screenColorA");
         const screenColorB = document.getElementById("screenColorB");
+        const swInfoTextInputs = {
+            1: document.getElementById("swInfoText1"),
+            2: document.getElementById("swInfoText2"),
+            3: document.getElementById("swInfoText3"),
+            4: document.getElementById("swInfoText4"),
+            5: document.getElementById("swInfoText5"),
+            6: document.getElementById("swInfoText6")
+        };
 
         // Mode mapping for ESP32
         const modeMap = {
@@ -252,24 +376,23 @@
             '4': 'longstep'
         };
 
+        // Bluetooth UUIDs for Nordic UART Service
+        const UART_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+        const UART_RX_CHARACTERISTIC_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
+        const UART_TX_CHARACTERISTIC_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
+
         // Data structures
         const buttonSettings = {
-            'Bank 1': {},
-            'Bank 2': {},
-            'Bank 3': {},
-            'Bank 4': {}
+            'Bank 1': {}, 'Bank 2': {}, 'Bank 3': {}, 'Bank 4': {}
         };
         const buttonColors = {
-            'Bank 1': {},
-            'Bank 2': {},
-            'Bank 3': {},
-            'Bank 4': {}
+            'Bank 1': {}, 'Bank 2': {}, 'Bank 3': {}, 'Bank 4': {}
         };
         const buttonBankStates = {
-            'Bank 1': {},
-            'Bank 2': {},
-            'Bank 3': {},
-            'Bank 4': {}
+            'Bank 1': {}, 'Bank 2': {}, 'Bank 3': {}, 'Bank 4': {}
+        };
+        const swInfoTexts = {
+            'Bank 1': {}, 'Bank 2': {}, 'Bank 3': {}, 'Bank 4': {}
         };
 
         // Initialize button settings
@@ -282,10 +405,27 @@
                     channel: { a: 1, b: 1 },
                     data: { a: 0, b: 0 },
                     value: { a: 0, b: 0 },
-                    screenText: { a: `SW-${buttonNum} A`, b: `SW-${buttonNum} B` }
+                    screenText: { a: '', b: '' },
+                    ccMessages: {
+                        a: [
+                            { control: 0, value: 0 },
+                            { control: 0, value: 0 },
+                            { control: 0, value: 0 },
+                            { control: 0, value: 0 },
+                            { control: 0, value: 0 }
+                        ],
+                        b: [
+                            { control: 0, value: 0 },
+                            { control: 0, value: 0 },
+                            { control: 0, value: 0 },
+                            { control: 0, value: 0 },
+                            { control: 0, value: 0 }
+                        ]
+                    }
                 };
                 buttonColors[bank][buttonNum] = { a: '#FFFF00', b: '#FFFF00' };
                 buttonBankStates[bank][buttonNum] = 'A';
+                swInfoTexts[bank][buttonNum] = `SW-${buttonNum}`;
             });
         });
 
@@ -294,27 +434,22 @@
             alertBox.textContent = message;
             alertBox.className = `alert ${type}`;
             alertBox.style.display = 'block';
-            setTimeout(() => alertBox.style.display = 'none', 7000); // ยืดเวลาแจ้งเตือน
+            setTimeout(() => alertBox.style.display = 'none', 7000);
         }
 
-        function updateFieldsBasedOnMessageType(bank, messageType, dataInput, valueInput, dataLabel, valueLabel) {
-            dataLabel.style.display = 'block';
-            valueLabel.style.display = 'none';
-            dataInput.style.display = 'block';
-            valueInput.style.display = 'none';
-
+        function updateFieldsBasedOnMessageType(bank, messageType, dataInput, valueInput, dataLabel, valueLabel, ccMessagesDiv, dataFieldsDiv) {
+            const isCC = messageType === 'CC';
+            ccMessagesDiv.style.display = isCC ? 'block' : 'none';
+            dataFieldsDiv.style.display = isCC ? 'none' : 'block';
+            dataLabel.style.display = isCC ? 'none' : 'block';
+            valueLabel.style.display = isCC ? 'none' : (messageType === 'PC' ? 'none' : 'block');
+            dataInput.style.display = isCC ? 'none' : 'block';
+            valueInput.style.display = isCC ? 'none' : (messageType === 'PC' ? 'none' : 'block');
             if (messageType === 'PC') {
                 dataLabel.textContent = 'Program Number:';
-            } else if (messageType === 'CC') {
-                dataLabel.textContent = 'Control Number:';
-                valueLabel.textContent = 'Control Value:';
-                valueInput.style.display = 'block';
-                valueLabel.style.display = 'block';
             } else if (messageType === 'NOTE') {
                 dataLabel.textContent = 'Note Number:';
                 valueLabel.textContent = 'Velocity:';
-                valueInput.style.display = 'block';
-                valueLabel.style.display = 'block';
             }
         }
 
@@ -324,316 +459,423 @@
             bankBSettings.style.display = showBankB ? 'block' : 'none';
         }
 
+        async function checkPortStatus() {
+            if (!port || !isConnected) return false;
+            try {
+                const signals = await port.getSignals();
+                return true;
+            } catch (error) {
+                console.log('DEBUG: Port status check failed:', error);
+                return false;
+            }
+        }
+
         // === Serial Connection ===
         async function connectSerial() {
             if (!navigator.serial) {
                 showAlert('Web Serial API ไม่รองรับ กรุณาใช้ Chrome, Edge หรือ Opera ล่าสุด', 'error');
-                console.log('DEBUG: Web Serial API not supported');
                 return;
             }
-
             if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
                 showAlert('ต้องรันผ่าน HTTPS หรือ localhost เพื่อใช้ Web Serial API', 'error');
-                console.log('DEBUG: Page not served over HTTPS or localhost');
                 return;
             }
-
             try {
                 if (isConnected) {
-                    showAlert('เชื่อมต่ออยู่แล้ว กรุณายกเลิกการเชื่อมต่อก่อน', 'error');
-                    console.log('DEBUG: Already connected');
+                    showAlert('เชื่อมต่อ Serial อยู่แล้ว กรุณายกเลิกการเชื่อมต่อก่อน', 'error');
                     return;
                 }
-
-                console.log('DEBUG: Requesting serial port');
+                if (bluetoothConnected) {
+                    showAlert('กรุณายกเลิกการเชื่อมต่อ Bluetooth ก่อน', 'error');
+                    return;
+                }
                 port = await navigator.serial.requestPort();
                 if (!port) {
                     showAlert('ไม่ได้เลือกพอร์ต Serial กรุณาเลือกพอร์ต', 'error');
-                    console.log('DEBUG: No port selected');
                     return;
                 }
-
-                console.log('DEBUG: Opening port with baudRate 115200');
                 await port.open({ baudRate: 115200 });
-                console.log('DEBUG: Port opened successfully');
-
                 writer = port.writable.getWriter();
                 reader = port.readable.getReader();
                 isConnected = true;
-
-                connectionStatus.textContent = 'Connected';
+                readLoopRunning = true;
+                connectionStatus.textContent = 'เชื่อมต่อผ่าน Serial';
                 connectionStatus.classList.remove('disconnected');
-                connectionStatus.classList.add('connected');
-                connectButton.textContent = 'Disconnect';
+                connectionStatus.classList.add('connected', 'serial');
+                connectButton.textContent = 'ยกเลิกการเชื่อมต่อ Serial';
                 loadButton.disabled = false;
                 saveButton.disabled = false;
                 clearEEPROMButton.disabled = false;
-
                 showAlert('เชื่อมต่อพอร์ต Serial สำเร็จ!', 'success');
-                console.log('DEBUG: Starting readLoop');
                 readLoop();
+                sendCommand('GET_STATUS\n');
             } catch (error) {
-                showAlert(`ไม่สามารถเชื่อมต่อ Serial ได้: ${error.message}. ตรวจสอบว่า ESP32 เชื่อมต่ออยู่, ไดรเวอร์ติดตั้งแล้ว, และไม่มีโปรแกรมอื่นใช้พอร์ต`, 'error');
-                console.log('DEBUG: Serial connection error:', error);
+                showAlert(`ไม่สามารถเชื่อมต่อ Serial ได้: ${error.message}`, 'error');
                 await disconnectSerial();
             }
         }
 
         async function disconnectSerial() {
             try {
+                readLoopRunning = false;
                 if (reader) {
                     await reader.cancel().catch(() => {});
                     reader.releaseLock();
                     reader = null;
-                    console.log('DEBUG: Reader released');
                 }
                 if (writer) {
                     writer.releaseLock();
                     writer = null;
-                    console.log('DEBUG: Writer released');
                 }
                 if (port) {
                     await port.close();
                     port = null;
-                    console.log('DEBUG: Port closed');
                 }
                 isConnected = false;
-                connectionStatus.textContent = 'Disconnected';
-                connectionStatus.classList.remove('connected');
+                connectionStatus.textContent = 'ไม่ได้เชื่อมต่อ';
+                connectionStatus.classList.remove('connected', 'serial');
                 connectionStatus.classList.add('disconnected');
                 connectButton.textContent = 'Connect to Serial';
                 loadButton.disabled = true;
                 saveButton.disabled = true;
                 clearEEPROMButton.disabled = true;
-                showAlert('ยกเลิกการเชื่อมต่อ Serial', 'info');
+                showAlert('ยกเลิกการเชื่อมต่อ Serial สำเร็จ', 'info');
             } catch (error) {
-                showAlert(`ข้อผิดพลาดในการยกเลิกการเชื่อมต่อ: ${error.message}`, 'error');
-                console.log('DEBUG: Disconnect error:', error);
+                showAlert(`ข้อผิดพลาดในการยกเลิกการเชื่อมต่อ Serial: ${error.message}`, 'error');
+            }
+        }
+
+        // === Bluetooth Connection ===
+        async function connectBluetooth() {
+            if (!navigator.bluetooth) {
+                showAlert('Web Bluetooth API ไม่รองรับ กรุณาใช้ Chrome หรือ Edge ล่าสุด', 'error');
+                return;
+            }
+            if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                showAlert('ต้องรันผ่าน HTTPS หรือ localhost เพื่อใช้ Web Bluetooth API', 'error');
+                return;
+            }
+            try {
+                if (bluetoothConnected) {
+                    showAlert('กำลังเชื่อมต่อ Bluetooth อยู่ กรุณายกเลิกการเชื่อมต่อก่อน', 'error');
+                    return;
+                }
+                if (isConnected) {
+                    showAlert('กรุณายกเลิกการเชื่อมต่อ Serial ก่อนเชื่อมต่อ Bluetooth', 'error');
+                    return;
+                }
+                console.log('DEBUG: Starting Bluetooth connection process...');
+                showAlert('กำลังค้นหาอุปกรณ์ Bluetooth (P6_MIDI)...', 'info');
+                bluetoothDevice = await navigator.bluetooth.requestDevice({
+                    filters: [{ name: 'P6_MIDI' }],
+                    optionalServices: [UART_SERVICE_UUID]
+                });
+                console.log('DEBUG: Device selected:', bluetoothDevice.name, 'ID:', bluetoothDevice.id);
+                bluetoothDevice.addEventListener('gattserverdisconnected', () => {
+                    console.log('DEBUG: Bluetooth GATT server disconnected');
+                    disconnectBluetooth();
+                });
+                showAlert('กำลังเชื่อมต่อกับ GATT server...', 'info');
+                const server = await bluetoothDevice.gatt.connect();
+                console.log('DEBUG: Connected to GATT server');
+                showAlert('กำลังค้นหา Nordic UART Service...', 'info');
+                const service = await server.getPrimaryService(UART_SERVICE_UUID);
+                console.log('DEBUG: UART Service found with UUID:', UART_SERVICE_UUID);
+                showAlert('กำลังตั้งค่า RX/TX Characteristics...', 'info');
+                bluetoothCharacteristic = await service.getCharacteristic(UART_RX_CHARACTERISTIC_UUID);
+                const notifyCharacteristic = await service.getCharacteristic(UART_TX_CHARACTERISTIC_UUID);
+                console.log('DEBUG: RX Characteristic:', UART_RX_CHARACTERISTIC_UUID, 'TX Characteristic:', UART_TX_CHARACTERISTIC_UUID);
+                await notifyCharacteristic.startNotifications();
+                notifyCharacteristic.addEventListener('characteristicvaluechanged', handleBluetoothData);
+                bluetoothConnected = true;
+                connectionStatus.textContent = 'เชื่อมต่อผ่าน Bluetooth';
+                connectionStatus.classList.remove('disconnected');
+                connectionStatus.classList.add('connected', 'bluetooth');
+                connectBluetoothButton.textContent = 'ยกเลิกการเชื่อมต่อ Bluetooth';
+                loadButton.disabled = false;
+                saveButton.disabled = false;
+                clearEEPROMButton.disabled = false;
+                showAlert('เชื่อมต่อ Bluetooth กับ P6_MIDI สำเร็จ!', 'success');
+                console.log('DEBUG: Sending initial GET_STATUS command via Bluetooth');
+                await sendCommand('GET_STATUS\n', true);
+            } catch (error) {
+                console.error('DEBUG: Bluetooth connection failed:', error);
+                showAlert(`ไม่สามารถเชื่อมต่อ Bluetooth ได้: ${error.message}`, 'error');
+                await disconnectBluetooth();
+            }
+        }
+
+        async function disconnectBluetooth() {
+            try {
+                if (bluetoothDevice && bluetoothDevice.gatt.connected) {
+                    console.log('DEBUG: Disconnecting Bluetooth GATT server...');
+                    await bluetoothDevice.gatt.disconnect();
+                } else {
+                    console.log('DEBUG: No active Bluetooth GATT connection to disconnect');
+                }
+                bluetoothDevice = null;
+                bluetoothCharacteristic = null;
+                bluetoothConnected = false;
+                bluetoothBuffer = '';
+                pendingResponse = null;
+                connectionStatus.textContent = 'ไม่ได้เชื่อมต่อ';
+                connectionStatus.classList.remove('connected', 'bluetooth');
+                connectionStatus.classList.add('disconnected');
+                connectBluetoothButton.textContent = 'Connect to Bluetooth';
+                loadButton.disabled = true;
+                saveButton.disabled = true;
+                clearEEPROMButton.disabled = true;
+                showAlert('ยกเลิกการเชื่อมต่อ Bluetooth สำเร็จ', 'info');
+                console.log('DEBUG: Bluetooth disconnection completed');
+            } catch (error) {
+                console.error('DEBUG: Bluetooth disconnection error:', error);
+                showAlert(`ข้อผิดพลาดในการยกเลิกการเชื่อมต่อ Bluetooth: ${error.message}`, 'error');
+            }
+        }
+
+        function handleBluetoothData(event) {
+            const value = event.target.value;
+            const text = new TextDecoder().decode(value);
+            console.log('DEBUG: Received Bluetooth data:', text);
+            bluetoothBuffer += text;
+            const lines = bluetoothBuffer.split('\n');
+            bluetoothBuffer = lines.pop();
+            for (const line of lines) {
+                const trimmedLine = line.trim();
+                if (trimmedLine) {
+                    console.log('DEBUG: Processing Bluetooth line:', trimmedLine);
+                    processReceivedData(trimmedLine);
+                }
             }
         }
 
         // === Serial Communication ===
         async function readLoop() {
             let buffer = '';
-            while (isConnected && reader) {
+            let retryCount = 0;
+            const maxRetries = 3;
+            while (isConnected && readLoopRunning && reader && !bluetoothConnected) {
                 try {
                     const { value, done } = await reader.read();
                     if (done) {
-                        console.log('DEBUG: Reader done, disconnecting');
                         await disconnectSerial();
                         break;
                     }
+                    retryCount = 0;
                     const text = new TextDecoder().decode(value);
                     buffer += text;
-
                     const lines = buffer.split('\n');
                     buffer = lines.pop();
                     for (const line of lines) {
                         const trimmedLine = line.trim();
                         if (trimmedLine) {
-                            console.log('DEBUG: Received from ESP32:', trimmedLine);
+                            console.log('DEBUG: Received from Serial:', trimmedLine);
                             processReceivedData(trimmedLine);
                         }
                     }
                 } catch (error) {
-                    showAlert(`ข้อผิดพลาดในการอ่าน Serial: ${error.message}. อาจเกิดจาก ESP32 ถอดการเชื่อมต่อ`, 'error');
-                    console.log('DEBUG: Read loop error:', error);
-                    await disconnectSerial();
-                    break;
+                    if (retryCount < maxRetries) {
+                        retryCount++;
+                        showAlert(`ข้อผิดพลาดในการอ่าน Serial (ครั้งที่ ${retryCount}/${maxRetries}): ${error.message}`, 'error');
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        continue;
+                    } else {
+                        showAlert(`ข้อผิดพลาดในการอ่าน Serial หลังลอง ${maxRetries} ครั้ง: ${error.message}`, 'error');
+                        await disconnectSerial();
+                        break;
+                    }
                 }
             }
         }
 
-        async function sendCommand(command) {
-            if (!isConnected || !writer) {
-                showAlert('กรุณาเชื่อมต่อพอร์ต Serial ก่อนส่งคำสั่ง', 'error');
-                console.log('DEBUG: Cannot send command, not connected');
-                return false;
-            }
-            try {
-                console.log('DEBUG: Sending command:', command);
-                const data = new TextEncoder().encode(command);
-                await writer.write(data);
-                await new Promise(resolve => setTimeout(resolve, 100));
-                return true;
-            } catch (error) {
-                showAlert(`ไม่สามารถส่งคำสั่งได้: ${error.message}`, 'error');
-                console.log('DEBUG: Send command error:', error);
-                return false;
+        async function sendCommand(command, useBluetooth = false, expectedResponse = null, timeoutMs = 5000) {
+            if (useBluetooth) {
+                if (!bluetoothConnected || !bluetoothCharacteristic) {
+                    showAlert('กรุณาเชื่อมต่อ Bluetooth ก่อนส่งคำสั่ง', 'error');
+                    console.error('DEBUG: Bluetooth not connected or characteristic not initialized');
+                    return false;
+                }
+                try {
+                    if (typeof bluetoothCharacteristic.writeValueWithoutResponse !== 'function') {
+                        showAlert('ข้อผิดพลาด: Bluetooth characteristic ไม่ถูกต้อง', 'error');
+                        console.error('DEBUG: Invalid bluetoothCharacteristic:', bluetoothCharacteristic);
+                        return false;
+                    }
+                    const maxChunkSize = 20;
+                    const data = new TextEncoder().encode(command);
+                    console.log('DEBUG: Command to send:', command.trim(), 'Length:', data.length);
+                    pendingResponse = expectedResponse;
+                    if (data.length <= maxChunkSize) {
+                        await bluetoothCharacteristic.writeValueWithoutResponse(data);
+                    } else {
+                        for (let i = 0; i < data.length; i += maxChunkSize) {
+                            const chunk = data.slice(i, i + maxChunkSize);
+                            await bluetoothCharacteristic.writeValueWithoutResponse(chunk);
+                            console.log('DEBUG: Sent chunk:', new TextDecoder().decode(chunk));
+                            await new Promise(resolve => setTimeout(resolve, 20)); // Increased delay
+                        }
+                    }
+                    console.log('DEBUG: Sent Bluetooth command:', command.trim());
+                    if (expectedResponse) {
+                        const responseReceived = await new Promise((resolve) => {
+                            const timeout = setTimeout(() => resolve(false), timeoutMs);
+                            const checkResponse = () => {
+                                if (pendingResponse === null) {
+                                    clearTimeout(timeout);
+                                    resolve(true);
+                                }
+                            };
+                            setInterval(checkResponse, 100);
+                        });
+                        if (!responseReceived) {
+                            console.error('DEBUG: Timeout waiting for response:', expectedResponse);
+                            return false;
+                        }
+                    }
+                    return true;
+                } catch (error) {
+                    showAlert(`ไม่สามารถส่งคำสั่ง Bluetooth ได้: ${error.message}`, 'error');
+                    console.error('DEBUG: Bluetooth write error:', error);
+                    return false;
+                }
+            } else {
+                if (!isConnected || !writer || !await checkPortStatus()) {
+                    showAlert('กรุณาเชื่อมต่อพอร์ต Serial ก่อนส่งคำสั่ง', 'error');
+                    console.error('DEBUG: Serial not connected');
+                    return false;
+                }
+                try {
+                    const data = new TextEncoder().encode(command);
+                    await writer.write(data);
+                    console.log('DEBUG: Sent Serial command:', command.trim());
+                    return true;
+                } catch (error) {
+                    showAlert(`ไม่สามารถส่งคำสั่ง Serial ได้: ${error.message}`, 'error');
+                    console.error('DEBUG: Serial write error:', error);
+                    return false;
+                }
             }
         }
 
         // === Load Settings ===
         async function loadSettings() {
-            if (!isConnected) {
-                showAlert('กรุณาเชื่อมต่อพอร์ต Serial ก่อนโหลดการตั้งค่า', 'error');
-                console.log('DEBUG: Cannot load settings, not connected');
+            if (!isConnected && !bluetoothConnected) {
+                showAlert('กรุณาเชื่อมต่อพอร์ต Serial หรือ Bluetooth ก่อนโหลดการตั้งค่า', 'error');
                 return;
             }
-
             showAlert('กำลังโหลดการตั้งค่าจาก ESP32...', 'info');
-            receivedData = false;
-
-            try {
-                const maxRetries = 5;
-                let attempt = 0;
-                while (attempt < maxRetries && !receivedData) {
-                    attempt++;
-                    console.log(`DEBUG: Attempt ${attempt} to send GET_STATUS`);
-                    await sendCommand('GET_STATUS\n');
-                    await new Promise(resolve => setTimeout(resolve, 5000));
-                }
-
-                dataTimeout = setTimeout(() => {
-                    if (!receivedData) {
-                        showAlert('ไม่ได้รับการตั้งค่าจาก ESP32 หลังจากลองหลายครั้ง ตรวจสอบว่า ESP32 ทำงานปกติ', 'error');
-                    }
-                }, 30000);
-            } catch (error) {
-                showAlert(`ข้อผิดพลาดในการขอการตั้งค่า: ${error.message}`, 'error');
-                console.log('DEBUG: Load settings error:', error);
-                clearTimeout(dataTimeout);
-            }
+            await sendCommand('GET_STATUS\n', bluetoothConnected, 'STATUS');
         }
 
         // === Process Received Data ===
         function processReceivedData(text) {
-            console.log('DEBUG: Processing received data:', text);
-            receivedData = true;
-            clearTimeout(dataTimeout);
-
+            if (!text) {
+                console.log('DEBUG: Empty data received');
+                return;
+            }
             if (text.match(/SET_OK/i)) {
                 showAlert('บันทึกการตั้งค่าสำเร็จ!', 'success');
+                pendingResponse = null;
                 loadSettings();
                 return;
             }
-
+            if (text.match(/CLEAR_OK/i) || text.match(/EEPROM_CLEARED/i)) {
+                showAlert('ล้าง EEPROM สำเร็จ!', 'success');
+                pendingResponse = null;
+                loadSettings();
+                return;
+            }
             if (text.match(/ERROR|Invalid|WARNING/i)) {
                 showAlert(`ESP32 ตอบกลับข้อผิดพลาด: ${text}`, 'error');
-                console.log('DEBUG: ESP32 error response:', text);
+                pendingResponse = null;
                 return;
             }
-
-            const statusRegex = /STATUS:(\d+)\|(\d+)\|((?:\d+:[1-4],(?:PC|CC|NOTE|),[^,]*,\d*,(?:\d*,)?\d*,(?:PC|CC|NOTE|),[^,]*,\d*,(?:\d*,)?\d*,[^,|]*,[^,|]*,[0-9A-F]{6},[0-9A-F]{6},[AB]\|)+)/i;
+            const statusRegex = /STATUS:(\d+)\|(\d+)\|((?:\d+:[1-4],(?:PC|CC|NOTE)?,[^,]*,\d*,(?:\d*,)?\d*,(?:PC|CC|NOTE)?,[^,]*,\d*,(?:\d*,)?\d*,[^,|]*,[^,|]*,[^,|]*,[0-9A-F]{6},[0-9A-F]{6},[AB]\|)+)/i;
             const match = text.match(statusRegex);
-
-            if (!match) {
-                showAlert(`ข้อมูลจาก ESP32 ไม่ถูกต้อง: ${text}`, 'error');
-                console.log('DEBUG: statusRegex failed to match:', text);
-                return;
-            }
-
-            const [, bank, currentButton, buttonData] = match;
-            const bankNum = parseInt(bank);
-            const currentButtonNum = parseInt(currentButton);
-
-            if (bankNum < 1 || bankNum > 4) {
-                showAlert(`หมายเลข Bank ไม่ถูกต้อง: ${bankNum}`, 'error');
-                console.log('DEBUG: Invalid bank number:', bankNum);
-                return;
-            }
-
-            currentBank = `Bank ${bankNum}`;
-            currentBankDisplay.textContent = bankNum;
-            currentButtonDisplay.textContent = currentButtonNum;
-            bankSelect.value = currentBank;
-
-            const buttonRegex = /(\d+):([1-4]),([A-Z]{0,4}),([^,]*),([^,]*),([^,]*),([A-Z]{0,4}),([^,]*),([^,]*),([^,]*),([^,|]*),([^,|]*),([0-9A-F]{6}),([0-9A-F]{6}),([AB])/gi;
-            let buttonMatch;
-
-            while ((buttonMatch = buttonRegex.exec(buttonData))) {
-                const [
-                    , buttonNum, modeNum, typeA, data1A, valueAOpt, channelA, typeB, data1B, valueBOpt, channelB,
-                    screenTextAVal, screenTextBVal, screenColorAVal, screenColorBVal, bankState
-                ] = buttonMatch;
-
-                if (buttonNum < 1 || buttonNum > 6) {
-                    console.log(`DEBUG: Invalid button number: ${buttonNum}`);
-                    continue;
+            if (match) {
+                const [, bank, currentButton, buttonData] = match;
+                const bankNum = parseInt(bank);
+                const currentButtonNum = parseInt(currentButton);
+                if (bankNum < 1 || bankNum > 4) {
+                    showAlert(`หมายเลข Bank ไม่ถูกต้อง: ${bankNum}`, 'error');
+                    return;
                 }
-
-                const modeValue = modeMap[modeNum] || 'single';
-
-                if (!buttonSettings[currentBank][buttonNum]) {
-                    buttonSettings[currentBank][buttonNum] = {
-                        mode: modeValue,
-                        messageType: { a: 'PC', b: 'PC' },
-                        channel: { a: 1, b: 1 },
-                        data: { a: 0, b: 0 },
-                        value: { a: 0, b: 0 },
-                        screenText: { a: `SW-${buttonNum} A`, b: `SW-${buttonNum} B` }
+                currentBank = `Bank ${bankNum}`;
+                currentBankDisplay.textContent = bankNum;
+                currentButtonDisplay.textContent = currentButtonNum;
+                bankSelect.value = currentBank;
+                const buttonRegex = /(\d+):([1-4]),([A-Z]{0,4}),([^,]*),([^,]*),([^,]*),([A-Z]{0,4}),([^,]*),([^,]*),([^,]*),([^,|]*),([^,|]*),([^,|]*),([0-9A-F]{6}),([0-9A-F]{6}),([AB])/gi;
+                let buttonMatch;
+                while ((buttonMatch = buttonRegex.exec(buttonData))) {
+                    const [
+                        , buttonNum, modeNum, typeA, data1A, valueAOpt, channelA, typeB, data1B, valueBOpt, channelB,
+                        screenTextAVal, screenTextBVal, swInfoTextVal, screenColorAVal, screenColorBVal, bankState
+                    ] = buttonMatch;
+                    if (buttonNum < 1 || buttonNum > 6) continue;
+                    const modeValue = modeMap[modeNum] || 'single';
+                    const settings = buttonSettings[currentBank][buttonNum] || {};
+                    settings.mode = modeValue;
+                    settings.messageType = { a: typeA || 'PC', b: typeB || 'PC' };
+                    settings.channel = { a: parseInt(channelA) || 1, b: parseInt(channelB) || 1 };
+                    settings.data = { a: parseInt(data1A) || 0, b: parseInt(data1B) || 0 };
+                    settings.value = { a: parseInt(valueAOpt) || 0, b: parseInt(valueBOpt) || 0 };
+                    settings.screenText = { 
+                        a: screenTextAVal.trim() || `SW-${buttonNum} A`, 
+                        b: screenTextBVal.trim() || (modeValue === 'single' ? screenTextAVal.trim() : `SW-${buttonNum} B`) 
                     };
+                    if (typeA === 'CC') {
+                        settings.ccMessages.a[0].control = parseInt(data1A) || 0;
+                        settings.ccMessages.a[0].value = parseInt(valueAOpt) || 0;
+                    }
+                    if (typeB === 'CC') {
+                        settings.ccMessages.b[0].control = parseInt(data1B) || 0;
+                        settings.ccMessages.b[0].value = parseInt(valueBOpt) || 0;
+                    }
+                    buttonColors[currentBank][buttonNum] = { a: `#${screenColorAVal}`, b: `#${screenColorBVal}` };
+                    buttonBankStates[currentBank][buttonNum] = bankState;
+                    swInfoTexts[currentBank][buttonNum] = swInfoTextVal.trim() || `SW-${buttonNum}`;
+                    buttonSettings[currentBank][buttonNum] = settings;
+                    console.log(`DEBUG: Processed button ${buttonNum}: swInfoText=${swInfoTexts[currentBank][buttonNum]}, colorA=${buttonColors[currentBank][buttonNum].a}, colorB=${buttonColors[currentBank][buttonNum].b}`);
                 }
-                if (!buttonColors[currentBank][buttonNum]) {
-                    buttonColors[currentBank][buttonNum] = { a: '#FFFF00', b: '#FFFF00' };
-                }
-                if (!buttonBankStates[currentBank][buttonNum]) {
-                    buttonBankStates[currentBank][buttonNum] = 'A';
-                }
-
-                const settings = buttonSettings[currentBank][buttonNum];
-                settings.mode = modeValue;
-                settings.messageType.a = typeA || 'PC';
-                settings.messageType.b = typeB || 'PC';
-                settings.channel.a = parseInt(channelA) || 1;
-                settings.channel.b = parseInt(channelB) || 1;
-                settings.data.a = parseInt(data1A) || 0;
-                settings.data.b = parseInt(data1B) || 0;
-                settings.value.a = parseInt(valueAOpt) || 0;
-                settings.value.b = parseInt(valueBOpt) || 0;
-                settings.screenText.a = screenTextAVal.trim() || `SW-${buttonNum} A`;
-                settings.screenText.b = screenTextBVal.trim() || `SW-${buttonNum} B`;
-                buttonColors[currentBank][buttonNum].a = `#${screenColorAVal}`;
-                buttonColors[currentBank][buttonNum].b = `#${screenColorBVal}`;
-                buttonBankStates[currentBank][buttonNum] = bankState;
-
-                if (modeValue === 'single') {
-                    settings.messageType.b = settings.messageType.a;
-                    settings.channel.b = settings.channel.a;
-                    settings.data.b = settings.data.a;
-                    settings.value.b = settings.value.a;
-                    settings.screenText.b = settings.screenText.a;
-                    buttonColors[currentBank][buttonNum].b = buttonColors[currentBank][buttonNum].a;
-                }
-
-                console.log(`DEBUG: Processed button ${buttonNum}:`, settings);
-            }
-
-            showAlert('โหลดการตั้งค่าสำเร็จ!', 'success');
-            updateUI();
-            const activeBtn = document.querySelector(`.button[data-button="${currentButtonNum}"]`);
-            if (activeBtn) {
-                selectButton(activeBtn);
+                showAlert('โหลดการตั้งค่าสำเร็จ!', 'success');
+                pendingResponse = null;
+                updateUI();
+                const activeBtn = document.querySelector(`.button[data-button="${currentButtonNum}"]`);
+                if (activeBtn) selectButton(activeBtn);
+            } else {
+                console.log('DEBUG: Unrecognized data:', text);
             }
         }
 
         // === Save Settings ===
         async function saveSettings() {
-            if (!isConnected || !activeButton) {
-                showAlert('กรุณาเชื่อมต่อและเลือกปุ่ม', 'error');
-                console.log('DEBUG: Cannot save settings, not connected or no button selected');
+            if (!isConnected && !bluetoothConnected) {
+                showAlert('กรุณาเชื่อมต่อ Serial หรือ Bluetooth', 'error');
                 return false;
             }
-
+            if (!activeButton) {
+                showAlert('กรุณาเลือกปุ่ม', 'error');
+                return false;
+            }
             const buttonValue = activeButton.getAttribute('data-button');
             const settings = buttonSettings[currentBank][buttonValue];
             const bankNum = currentBank.replace('Bank ', '');
-
             const modeNum = Object.keys(modeMap).find(key => modeMap[key] === settings.mode) || '1';
             const midiTypeA = settings.messageType.a.toUpperCase();
-            const midiTypeB = settings.messageType.b ? settings.messageType.b.toUpperCase() : settings.messageType.a.toUpperCase();
-            const channelAVal = settings.channel.a || 1;
-            const channelBVal = settings.channel.b || 1;
-            const dataAVal = settings.data.a || 0;
-            const dataBVal = settings.data.b || 0;
-            const valueAVal = settings.value.a || 0;
-            const valueBVal = settings.value.b || 0;
-            const screenTextAVal = settings.screenText.a.trim().replace(/"/g, '').replace(/,/g, '') || `SW-${buttonValue} A`;
-            const screenTextBVal = settings.screenText.b.trim().replace(/"/g, '').replace(/,/g, '') || (modeNum === '1' ? screenTextAVal : `SW-${buttonValue} B`);
+            const midiTypeB = settings.messageType.b.toUpperCase();
+            const channelAVal = parseInt(settings.channel.a) || 1;
+            const channelBVal = parseInt(settings.channel.b) || 1;
+            const dataAVal = midiTypeA === 'CC' ? (parseInt(settings.ccMessages.a[0].control) || 0) : (parseInt(settings.data.a) || 0);
+            const dataBVal = midiTypeB === 'CC' ? (parseInt(settings.ccMessages.b[0].control) || 0) : (parseInt(settings.data.b) || 0);
+            const valueAVal = midiTypeA === 'CC' ? (parseInt(settings.ccMessages.a[0].value) || 0) : (parseInt(settings.value.a) || 0);
+            const valueBVal = midiTypeB === 'CC' ? (parseInt(settings.ccMessages.b[0].value) || 0) : (parseInt(settings.value.b) || 0);
+            const screenTextAVal = (settings.screenText.a || `SW-${buttonValue} A`).trim().replace(/"/g, '').replace(/,/g, '');
+            const screenTextBVal = (settings.screenText.b || (modeNum === '1' ? screenTextAVal : `SW-${buttonValue} B`)).trim().replace(/"/g, '').replace(/,/g, '');
+            const swInfoTextVal = (swInfoTexts[currentBank][buttonValue] || `SW-${buttonValue}`).trim().replace(/"/g, '').replace(/,/g, '');
             const screenColorAVal = (buttonColors[currentBank][buttonValue].a || '#FFFF00').slice(1).toUpperCase();
             const screenColorBVal = (buttonColors[currentBank][buttonValue].b || '#FFFF00').slice(1).toUpperCase();
 
-            // ตรวจสอบความถูกต้องของข้อมูล
+            // Validate inputs
             if (dataAVal < 0 || dataAVal > 127 || dataBVal < 0 || dataBVal > 127 ||
                 valueAVal < 0 || valueAVal > 127 || valueBVal < 0 || valueBVal > 127) {
                 showAlert('ข้อมูล MIDI ต้องอยู่ระหว่าง 0-127', 'error');
@@ -643,52 +885,44 @@
                 showAlert('ช่อง MIDI ต้องอยู่ระหว่าง 1-16', 'error');
                 return false;
             }
-            if (screenTextAVal.length > 15 || screenTextBVal.length > 15) {
-                showAlert('ข้อความหน้าจอต้องไม่เกิน 15 ตัวอักษร', 'error');
+            if (screenTextAVal.length > 15 || screenTextBVal.length > 15 || swInfoTextVal.length > 15) {
+                showAlert('ข้อความต้องไม่เกิน 15 ตัวอักษร', 'error');
+                return false;
+            }
+            if (!screenColorAVal.match(/^[0-9A-F]{6}$/) || !screenColorBVal.match(/^[0-9A-F]{6}$/)) {
+                showAlert('รูปแบบสีไม่ถูกต้อง ต้องเป็นรหัส HEX 6 หลัก', 'error');
                 return false;
             }
 
-            // สร้างคำสั่ง SET
+            // Build command
             let cmd = `B ${bankNum} S ${buttonValue} MODE ${modeNum}`;
             cmd += ` BANK A ${midiTypeA} ${dataAVal}`;
             if (midiTypeA !== 'PC') cmd += ` ${valueAVal}`;
             cmd += ` CHANNEL_A ${channelAVal}`;
-
             if (modeNum !== '1') {
                 cmd += ` BANK B ${midiTypeB} ${dataBVal}`;
                 if (midiTypeB !== 'PC') cmd += ` ${valueBVal}`;
                 cmd += ` CHANNEL_B ${channelBVal}`;
             }
-
             cmd += ` SCREEN_TEXT_A "${screenTextAVal}"`;
             cmd += ` SCREEN_TEXT_B "${screenTextBVal}"`;
-            cmd += ` SCREEN_COLOR_A ${screenColorAVal}`;
-            cmd += ` SCREEN_COLOR_B ${screenColorBVal}\n`;
+            cmd += ` SW_INFO_TEXT "${swInfoTextVal}"`;
+            cmd += ` SCREEN_COLOR_A ${screenColorAVal} SCREEN_COLOR_B ${screenColorBVal}\n`;
+
+            console.log('DEBUG: Generated command:', cmd);
 
             try {
-                const success = await sendCommand(cmd);
+                const success = await sendCommand(cmd, bluetoothConnected, 'SET_OK');
                 if (success) {
                     showAlert('กำลังบันทึกการตั้งค่า...', 'info');
-                    return new Promise((resolve) => {
-                        const timeout = setTimeout(() => {
-                            showAlert('ไม่ได้รับการตอบสนอง SET_OK จาก ESP32', 'error');
-                            resolve(false);
-                        }, 5000);
-                        const checkResponse = () => {
-                            if (receivedData) {
-                                clearTimeout(timeout);
-                                resolve(true);
-                            } else {
-                                setTimeout(checkResponse, 100);
-                            }
-                        };
-                        checkResponse();
-                    });
+                    return true;
+                } else {
+                    showAlert('ไม่สามารถบันทึกการตั้งค่าได้: ไม่ได้รับการตอบกลับจาก ESP32', 'error');
+                    return false;
                 }
-                return false;
             } catch (error) {
                 showAlert(`ข้อผิดพลาดในการบันทึก: ${error.message}`, 'error');
-                console.log('DEBUG: Save settings error:', error);
+                console.error('DEBUG: Save settings error:', error);
                 return false;
             }
         }
@@ -699,10 +933,11 @@
                 const buttonId = button.getAttribute('data-button');
                 const color = buttonColors[currentBank][buttonId]?.a || '#FFFFFF';
                 button.style.backgroundColor = color;
-                const settings = buttonSettings[currentBank][buttonId];
-                button.textContent = settings?.screenText.a || `Button ${buttonId}`;
+                button.textContent = swInfoTexts[currentBank][buttonId] || `Button ${buttonId}`;
             });
-
+            Object.keys(swInfoTextInputs).forEach(buttonNum => {
+                swInfoTextInputs[buttonNum].value = swInfoTexts[currentBank][buttonNum] || `SW-${buttonNum}`;
+            });
             if (activeButton) {
                 const buttonValue = activeButton.getAttribute('data-button');
                 const settings = buttonSettings[currentBank][buttonValue] || {};
@@ -719,9 +954,24 @@
                 screenTextB.value = settings.screenText?.b || '';
                 screenColorA.value = buttonColors[currentBank][buttonValue]?.a || '#FFFF00';
                 screenColorB.value = buttonColors[currentBank][buttonValue]?.b || '#FFFF00';
-
-                updateFieldsBasedOnMessageType('A', messageTypeA.value, dataA, valueA, dataALabel, valueALabel);
-                updateFieldsBasedOnMessageType('B', messageTypeB.value, dataB, valueB, dataBLabel, valueBLabel);
+                document.querySelectorAll('.cc-control-a').forEach(input => {
+                    const index = parseInt(input.getAttribute('data-index'));
+                    input.value = settings.ccMessages.a[index].control || 0;
+                });
+                document.querySelectorAll('.cc-value-a').forEach(input => {
+                    const index = parseInt(input.getAttribute('data-index'));
+                    input.value = settings.ccMessages.a[index].value || 0;
+                });
+                document.querySelectorAll('.cc-control-b').forEach(input => {
+                    const index = parseInt(input.getAttribute('data-index'));
+                    input.value = settings.ccMessages.b[index].control || 0;
+                });
+                document.querySelectorAll('.cc-value-b').forEach(input => {
+                    const index = parseInt(input.getAttribute('data-index'));
+                    input.value = settings.ccMessages.b[index].value || 0;
+                });
+                updateFieldsBasedOnMessageType('A', messageTypeA.value, dataA, valueA, dataALabel, valueALabel, ccMessagesA, dataFieldsA);
+                updateFieldsBasedOnMessageType('B', messageTypeB.value, dataB, valueB, dataBLabel, valueBLabel, ccMessagesB, dataFieldsB);
                 updateBankBVisibility();
             } else {
                 updateBankBVisibility();
@@ -738,11 +988,13 @@
 
         // === Event Listeners ===
         connectButton.addEventListener('click', async () => {
-            if (isConnected) {
-                await disconnectSerial();
-            } else {
-                await connectSerial();
-            }
+            if (isConnected) await disconnectSerial();
+            else await connectSerial();
+        });
+
+        connectBluetoothButton.addEventListener('click', async () => {
+            if (bluetoothConnected) await disconnectBluetooth();
+            else await connectBluetooth();
         });
 
         loadButton.addEventListener('click', loadSettings);
@@ -757,14 +1009,30 @@
             settings.mode = modeSelect.value;
             settings.messageType = { a: messageTypeA.value, b: messageTypeB.value };
             settings.channel = { a: parseInt(channelA.value) || 1, b: parseInt(channelB.value) || 1 };
-            settings.data = { a: parseInt(dataA.value) || 0, b: parseInt(dataB.value) || 0 };
-            settings.value = { a: parseInt(valueA.value) || 0, b: parseInt(valueB.value) || 0 };
+            if (settings.messageType.a !== 'CC') {
+                settings.data.a = parseInt(dataA.value) || 0;
+                settings.value.a = parseInt(valueA.value) || 0;
+            }
+            if (settings.messageType.b !== 'CC') {
+                settings.data.b = parseInt(dataB.value) || 0;
+                settings.value.b = parseInt(valueB.value) || 0;
+            }
             settings.screenText = { 
                 a: screenTextA.value.trim() || `SW-${buttonValue} A`, 
                 b: screenTextB.value.trim() || (settings.mode === 'single' ? settings.screenText.a : `SW-${buttonValue} B`) 
             };
-            buttonColors[currentBank][buttonValue] = { a: screenColorA.value, b: screenColorB.value };
-
+            settings.ccMessages.a = Array.from(document.querySelectorAll('.cc-control-a')).map((input, index) => ({
+                control: parseInt(input.value) || 0,
+                value: parseInt(document.querySelectorAll('.cc-value-a')[index].value) || 0
+            }));
+            settings.ccMessages.b = Array.from(document.querySelectorAll('.cc-control-b')).map((input, index) => ({
+                control: parseInt(input.value) || 0,
+                value: parseInt(document.querySelectorAll('.cc-value-b')[index].value) || 0
+            }));
+            buttonColors[currentBank][buttonValue] = { 
+                a: screenColorA.value || '#FFFF00', 
+                b: screenColorB.value || '#FFFF00' 
+            };
             if (settings.mode === 'single') {
                 settings.messageType.b = settings.messageType.a;
                 settings.channel.b = settings.channel.a;
@@ -772,22 +1040,24 @@
                 settings.value.b = settings.value.a;
                 settings.screenText.b = settings.screenText.a;
                 buttonColors[currentBank][buttonValue].b = buttonColors[currentBank][buttonValue].a;
+                settings.ccMessages.b = settings.ccMessages.a.map(msg => ({ ...msg }));
             }
-
             buttonSettings[currentBank][buttonValue] = settings;
-            updateUI();
             await saveSettings();
         });
 
         clearEEPROMButton.addEventListener('click', async () => {
-            if (!isConnected) {
-                showAlert('กรุณาเชื่อมต่อพอร์ต Serial', 'error');
+            if (!isConnected && !bluetoothConnected) {
+                showAlert('กรุณาเชื่อมต่อ Serial หรือ Bluetooth', 'error');
                 return;
             }
             if (confirm('คุณแน่ใจหรือไม่ว่าต้องการล้าง EEPROM?')) {
-                const success = await sendCommand('CLEAR_EEPROM\n');
-                if (success) {
-                    showAlert('กำลังล้าง EEPROM...', 'info');
+                const success1 = await sendCommand('CLEAR_EEPROM\n', bluetoothConnected, 'WARNING');
+                if (success1) {
+                    const success2 = await sendCommand('CONFIRM_CLEAR\n', bluetoothConnected, 'CLEAR_OK');
+                    if (success2) {
+                        showAlert('กำลังล้าง EEPROM และรีเซ็ตการตั้งค่า...', 'info');
+                    }
                 }
             }
         });
@@ -795,16 +1065,13 @@
         bankSelect.addEventListener('change', () => {
             currentBank = bankSelect.value;
             currentBankDisplay.textContent = currentBank.replace('Bank ', '');
+            sendCommand('GET_STATUS\n', bluetoothConnected);
             updateUI();
-            if (activeButton) {
-                selectButton(activeButton);
-            }
+            if (activeButton) selectButton(activeButton);
         });
 
         document.querySelectorAll('.button').forEach(button => {
-            button.addEventListener('click', () => {
-                selectButton(button);
-            });
+            button.addEventListener('click', () => selectButton(button));
         });
 
         modeSelect.addEventListener('change', () => {
@@ -820,7 +1087,7 @@
             if (activeButton) {
                 const buttonValue = activeButton.getAttribute('data-button');
                 buttonSettings[currentBank][buttonValue].messageType.a = messageTypeA.value;
-                updateFieldsBasedOnMessageType('A', messageTypeA.value, dataA, valueA, dataALabel, valueALabel);
+                updateFieldsBasedOnMessageType('A', messageTypeA.value, dataA, valueA, dataALabel, valueALabel, ccMessagesA, dataFieldsA);
                 updateUI();
             }
         });
@@ -829,17 +1096,61 @@
             if (activeButton) {
                 const buttonValue = activeButton.getAttribute('data-button');
                 buttonSettings[currentBank][buttonValue].messageType.b = messageTypeB.value;
-                updateFieldsBasedOnMessageType('B', messageTypeB.value, dataB, valueB, dataBLabel, valueBLabel);
+                updateFieldsBasedOnMessageType('B', messageTypeB.value, dataB, valueB, dataBLabel, valueBLabel, ccMessagesB, dataFieldsB);
                 updateUI();
             }
         });
 
-        // Select Button 5 on page load
+        screenColorA.addEventListener('change', () => {
+            if (activeButton) {
+                const buttonValue = activeButton.getAttribute('data-button');
+                buttonColors[currentBank][buttonValue].a = screenColorA.value;
+                updateUI();
+            }
+        });
+
+        screenColorB.addEventListener('change', () => {
+            if (activeButton) {
+                const buttonValue = activeButton.getAttribute('data-button');
+                buttonColors[currentBank][buttonValue].b = screenColorB.value;
+                updateUI();
+            }
+        });
+
+        document.querySelectorAll('.cc-control-a, .cc-value-a, .cc-control-b, .cc-value-b').forEach(input => {
+            input.addEventListener('change', () => {
+                if (activeButton) {
+                    const buttonValue = activeButton.getAttribute('data-button');
+                    const settings = buttonSettings[currentBank][buttonValue];
+                    settings.ccMessages.a = Array.from(document.querySelectorAll('.cc-control-a')).map((input, index) => ({
+                        control: parseInt(input.value) || 0,
+                        value: parseInt(document.querySelectorAll('.cc-value-a')[index].value) || 0
+                    }));
+                    settings.ccMessages.b = Array.from(document.querySelectorAll('.cc-control-b')).map((input, index) => ({
+                        control: parseInt(input.value) || 0,
+                        value: parseInt(document.querySelectorAll('.cc-value-b')[index].value) || 0
+                    }));
+                    updateUI();
+                }
+            });
+        });
+
+        Object.values(swInfoTextInputs).forEach(input => {
+            input.addEventListener('change', async () => {
+                const buttonNum = input.id.replace('swInfoText', '');
+                const newText = input.value.trim() || `SW-${buttonNum}`;
+                swInfoTexts[currentBank][buttonNum] = newText;
+                const bankNum = currentBank.replace('Bank ', '');
+                const command = `B ${bankNum} S ${buttonNum} SW_INFO_TEXT "${newText}"\n`;
+                await sendCommand(command, bluetoothConnected, 'SET_OK');
+                console.log(`DEBUG: Changed swInfoText for button ${buttonNum}: ${newText}`);
+                updateUI();
+            });
+        });
+
         document.addEventListener('DOMContentLoaded', () => {
             const button5 = document.querySelector('.button[data-button="5"]');
-            if (button5) {
-                selectButton(button5);
-            }
+            if (button5) selectButton(button5);
             updateBankBVisibility();
             updateUI();
         });
